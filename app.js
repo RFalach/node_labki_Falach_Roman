@@ -12,21 +12,101 @@ let INVENTORY = [
     { id: 3, name: "Headphones", price: 75, qty: 20 },
 ];
 
+const config = require('./config');
 
-const PORT = process.env.PORT || 3000;
-const HOSTNAME = process.env.HOSTNAME || "localhost";
+function log({ level, method = null, url = null, status = null, message }) {
+    const logEntry = {
+	timestamp: new Date().toISOString(),
+	level,
+	method,
+	url,
+	status,
+	message,
+    };
 
+    const json = JSON.stringify(logEntry);
+
+    if (level === "ERROR") {
+	process.stderr.write(json + "\n");
+    } else {
+	process.stdout.write(json + "\n");
+    }
+}
+
+let isShuttingDown = false;
+
+function gracefulShutdown(signal) {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
+
+    server.close((err) => {
+	if (err) {
+	    console.error("Error during server close:", err);
+	    process.exit(1);
+	}
+
+	console.log("Server closed successfully");
+	process.exit(0);
+    });
+
+    setTimeout(() => {
+	console.error("Force shutdown after timeout");
+	process.exit(1);
+    }, 10000);
+}
+
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
+
+process.on("uncaughtException", (err) => {
+  log({
+    level: "ERROR",
+    message: err.message,
+  });
+
+  gracefulShutdown("uncaughtException");
+});
+
+process.on("unhandledRejection", (err) => {
+  log({
+    level: "ERROR",
+    message: err?.message || "Unhandled rejection",
+  });
+
+  gracefulShutdown("unhandledRejection");
+});
 
 const server = createServer((req, res) => {
+    // LOGGING
+    res.on("finish", () => {
+	const { method, url } = req;
+	const { statusCode } = res;
+
+	let level = "INFO";
+	if (statusCode >= 400) {
+	    level = "ERROR";
+	}
+
+	if (config.NODE_ENV === "development") {
+	    log({level, method, url, status: statusCode});
+	}
+
+	if (config.NODE_ENV === "production") {
+	    if (level === "ERROR") {
+		log({level, method, url, status: statusCode});
+	    }
+	}
+    });
+
     const method = req.method;
     const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
     const pathname = parsedUrl.pathname;
 
-
     res.setHeader("Content-Type", "application/json; charset=utf-8");
 
-
-    // GET
+    // GET products
     if (method === "GET" && pathname === "/products") {
 	const minPriceParam = parsedUrl.searchParams.get("minPrice");
 	const minPrice = minPriceParam ? parseFloat(minPriceParam) : 0;
@@ -44,6 +124,21 @@ const server = createServer((req, res) => {
 		items: results,
             }),
 	);
+    }
+
+    // GET health
+    if (req.method === "GET" && req.url === "/health") {
+	const data = {
+	    pid: process.pid,
+	    nodeVersion: process.version,
+	    platform: process.platform,
+	    uptime: process.uptime(),
+	    memoryUsage: process.memoryUsage(),
+	};
+
+	res.writeHead(200, { "Content-Type": "application/json" });
+	res.end(JSON.stringify(data));
+	return;
     }
 
 
@@ -132,7 +227,7 @@ const server = createServer((req, res) => {
     res.end(JSON.stringify({ error: "Route not found" }));
 });
 // Ми повинні вивести логи що сервер успішно запустився.
-server.listen(PORT, HOSTNAME, () => {
-    console.log(`Server running at http://${HOSTNAME}:${PORT}/`);
+server.listen(config.PORT, config.HOSTNAME, () => {
+    console.log(`Server running at http://${config.HOSTNAME}:${config.PORT}/`);
 });
 
