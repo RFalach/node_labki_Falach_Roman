@@ -5,29 +5,92 @@ import {
     deleteProduct,
 } from '../controllers/productController.js';
 
-export default function handleProductRoutes(
-    req,
-    res,
-    parsedUrl,
-    method,
-    pathname,
-    body
-) {
-    if (method === 'GET' && pathname === '/products') {
-        return getProducts(res, parsedUrl);
-    }
-    if (method === 'POST' && pathname === '/products') {
-        return postProduct(res, body);
-    }
-    if (method === 'PATCH' && pathname.startsWith('/products/')) {
-        const id = parseInt(pathname.split('/')[2], 10);
-        return patchProduct(res, id, body);
-    }
-    if (method === 'DELETE' && pathname.startsWith('/products/')) {
-        const id = parseInt(pathname.split('/')[2], 10);
-        return deleteProduct(res, id);
-    }
+import { productSchema } from '../schemas/productSchema.js';
+import { patchProductSchema } from '../schemas/patchProductSchema.js';
+import { paramsSchema } from '../schemas/paramsSchema.js';
 
-    res.statusCode = 404;
-    res.end(JSON.stringify({ error: 'Route not found' }));
+export default async function productRoutes(fastify) {
+    // GET /products
+    fastify.get(
+        '/products',
+        {
+            schema: {
+                querystring: {
+                    type: 'object',
+                    properties: {
+                        minPrice: { type: 'number', minimum: 0 },
+                    },
+                    additionalProperties: false,
+                },
+                response: {
+                    200: {
+                        type: 'object',
+                        properties: {
+                            count: { type: 'integer' },
+                            items: { type: 'array', items: productSchema },
+                        },
+                    },
+                },
+            },
+        },
+        getProducts
+    );
+
+    // POST /products
+    fastify.post(
+        '/products',
+        {
+            schema: {
+                body: productSchema,
+                response: {
+                    201: {
+                        type: 'object',
+                        properties: {
+                            message: { type: 'string' },
+                            product: productSchema,
+                        },
+                    },
+                },
+            },
+        },
+        postProduct
+    );
+
+    // PATCH /products/id
+    fastify.patch(
+        '/products/:id',
+        {
+            schema: {
+                params: paramsSchema,
+                body: patchProductSchema,
+                response: {
+                    200: {
+                        type: 'object',
+                        properties: {
+                            message: { type: 'string' },
+                            product: patchProductSchema,
+                        },
+                    },
+                },
+            },
+        },
+        patchProduct
+    );
+
+    // DELETE /products/id
+    fastify.delete(
+        '/products/:id',
+        {
+            schema: {
+                params: paramsSchema,
+                response: {
+                    200: {
+                        type: 'object',
+                        properties: { message: { type: 'string' } },
+                    },
+                },
+            },
+        },
+        deleteProduct
+    );
 }

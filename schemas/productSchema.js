@@ -1,8 +1,4 @@
-import Ajv from 'ajv';
-
-const ajv = new Ajv({ allErrors: true });
-
-const productSchema = {
+export const productSchema = {
     type: 'object',
     properties: {
         name: { type: 'string', minLength: 1 },
@@ -12,7 +8,3 @@ const productSchema = {
     required: ['name', 'price', 'qty'],
     additionalProperties: false,
 };
-
-const validateProduct = ajv.compile(productSchema);
-
-export default validateProduct;

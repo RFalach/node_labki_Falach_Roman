@@ -1,8 +1,4 @@
-import Ajv from 'ajv';
-
-const ajv = new Ajv({ allErrors: true });
-
-const patchProductSchema = {
+export const patchProductSchema = {
     type: 'object',
     properties: {
         name: { type: 'string', minLength: 1 },
@@ -11,7 +7,3 @@ const patchProductSchema = {
     },
     additionalProperties: false,
 };
-
-const validatePatchProduct = ajv.compile(patchProductSchema);
-
-export default validatePatchProduct;

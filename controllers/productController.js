@@ -1,10 +1,12 @@
 import INVENTORY from '../data/inventory.js';
-import validateProduct from '../validators/productSchema.js';
-import validatePatchProduct from '../validators/patchProductSchema.js';
-import validateParams from '../validators/paramsSchema.js';
+import {
+    PRODUCT_NOT_FOUND,
+    INVALID_PARAMS,
+    INVALID_BODY,
+} from '../constants/errors.js';
 
-export function getProducts(res, parsedUrl) {
-    const minPriceParam = parsedUrl.searchParams.get('minPrice');
+export async function getProducts(request, reply) {
+    const minPriceParam = request.query.minPrice;
     const minPrice = minPriceParam ? parseFloat(minPriceParam) : 0;
 
     let results = [...INVENTORY];
@@ -12,80 +14,65 @@ export function getProducts(res, parsedUrl) {
         results = results.filter((p) => p.price >= minPrice);
     }
 
-    res.statusCode = 200;
-    res.end(JSON.stringify({ count: results.length, items: results }, null, 4));
+    return reply.code(200).send({
+        count: results.length,
+        items: results,
+    });
 }
 
-export function postProduct(res, body) {
-    try {
-        const data = JSON.parse(body);
-        if (!validateProduct(data)) {
-            res.statusCode = 400;
-            return res.end(JSON.stringify({ errors: validateProduct.errors }));
-        }
+export async function postProduct(request, reply) {
+    const data = request.body;
 
-        const lastId = INVENTORY.length
-            ? INVENTORY[INVENTORY.length - 1].id
-            : 0;
-        const productToSave = { id: lastId + 1, ...data };
-        INVENTORY.push(productToSave);
-
-        res.statusCode = 201;
-        res.end(
-            JSON.stringify({ message: 'Product added', product: productToSave })
-        );
-    } catch {
-        res.statusCode = 400;
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+    if (!data || typeof data !== 'object') {
+        return reply.badRequest({ error: INVALID_BODY });
     }
+
+    const lastId = INVENTORY.length ? INVENTORY[INVENTORY.length - 1].id : 0;
+    const productToSave = { id: lastId + 1, ...data };
+    INVENTORY.push(productToSave);
+
+    return reply.code(201).send({
+        message: 'Product added',
+        product: productToSave,
+    });
 }
 
-export function patchProduct(res, id, body) {
-    if (!validateParams({ id })) {
-        res.statusCode = 400;
-        return res.end(JSON.stringify({ errors: validateParams.errors }));
+export async function patchProduct(request, reply) {
+    const id = parseInt(request.params.id, 10);
+    if (isNaN(id)) {
+        return reply.badRequest({ error: INVALID_PARAMS });
     }
 
     const index = INVENTORY.findIndex((p) => p.id === id);
     if (index === -1) {
-        res.statusCode = 404;
-        return res.end(JSON.stringify({ error: 'Not Found' }));
+        return reply.notFound({ error: PRODUCT_NOT_FOUND });
     }
 
-    try {
-        const updates = JSON.parse(body);
-        if (!validatePatchProduct(updates)) {
-            res.statusCode = 400;
-            return res.end(
-                JSON.stringify({ errors: validatePatchProduct.errors })
-            );
-        }
-
-        INVENTORY[index] = { ...INVENTORY[index], ...updates };
-        res.statusCode = 200;
-        res.end(
-            JSON.stringify({ message: 'Updated', product: INVENTORY[index] })
-        );
-    } catch {
-        res.statusCode = 400;
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+    const updates = request.body;
+    if (!updates || typeof updates !== 'object') {
+        return reply.badRequest({ error: INVALID_BODY });
     }
+
+    INVENTORY[index] = { ...INVENTORY[index], ...updates };
+
+    return reply.code(200).send({
+        message: 'Updated',
+        product: INVENTORY[index],
+    });
 }
 
-export function deleteProduct(res, id) {
-    if (!validateParams({ id })) {
-        res.statusCode = 400;
-        return res.end(JSON.stringify({ errors: validateParams.errors }));
+export async function deleteProduct(request, reply) {
+    const id = parseInt(request.params.id, 10);
+    if (isNaN(id)) {
+        return reply.badRequest({ error: INVALID_PARAMS });
     }
 
-    const originalLength = INVENTORY.length;
-    INVENTORY = INVENTORY.filter((p) => p.id !== id);
-
-    if (INVENTORY.length < originalLength) {
-        res.statusCode = 200;
-        res.end(JSON.stringify({ message: 'Deleted' }));
-    } else {
-        res.statusCode = 404;
-        res.end(JSON.stringify({ error: 'Not Found' }));
+    const index = INVENTORY.findIndex((p) => p.id === id);
+    if (index === -1) {
+        return reply.notFound({ error: PRODUCT_NOT_FOUND });
     }
+
+    INVENTORY.splice(index, 1);
+
+    return reply.code(200).send({ message: 'Deleted' });
 }
