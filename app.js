@@ -1,8 +1,8 @@
-const { createServer } = require('node:http');
-const { URL } = require('url');
-const config = require('./config');
-const log = require('./utils/logger');
-const handleProductRoutes = require('./routes/productRoutes');
+import { createServer } from 'node:http';
+import { URL } from 'url';
+import config from './config.js';
+import log from './utils/logger.js';
+import handleProductRoutes from './routes/productRoutes.js';
 
 let isShuttingDown = false;
 

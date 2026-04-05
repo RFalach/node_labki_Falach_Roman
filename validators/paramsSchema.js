@@ -1,4 +1,5 @@
-const Ajv = require('ajv');
+import Ajv from 'ajv';
+
 const ajv = new Ajv({ allErrors: true });
 
 const paramsSchema = {
@@ -11,4 +12,5 @@ const paramsSchema = {
 };
 
 const validateParams = ajv.compile(paramsSchema);
-module.exports = validateParams;
+
+export default validateParams;

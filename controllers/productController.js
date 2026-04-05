@@ -1,9 +1,9 @@
-const INVENTORY = require('../data/inventory');
-const validateProduct = require('../validators/productSchema');
-const validatePatchProduct = require('../validators/patchProductSchema');
-const validateParams = require('../validators/paramsSchema');
+import INVENTORY from '../data/inventory.js';
+import validateProduct from '../validators/productSchema.js';
+import validatePatchProduct from '../validators/patchProductSchema.js';
+import validateParams from '../validators/paramsSchema.js';
 
-function getProducts(res, parsedUrl) {
+export function getProducts(res, parsedUrl) {
     const minPriceParam = parsedUrl.searchParams.get('minPrice');
     const minPrice = minPriceParam ? parseFloat(minPriceParam) : 0;
 
@@ -16,7 +16,7 @@ function getProducts(res, parsedUrl) {
     res.end(JSON.stringify({ count: results.length, items: results }, null, 4));
 }
 
-function postProduct(res, body) {
+export function postProduct(res, body) {
     try {
         const data = JSON.parse(body);
         if (!validateProduct(data)) {
@@ -40,7 +40,7 @@ function postProduct(res, body) {
     }
 }
 
-function patchProduct(res, id, body) {
+export function patchProduct(res, id, body) {
     if (!validateParams({ id })) {
         res.statusCode = 400;
         return res.end(JSON.stringify({ errors: validateParams.errors }));
@@ -72,7 +72,7 @@ function patchProduct(res, id, body) {
     }
 }
 
-function deleteProduct(res, id) {
+export function deleteProduct(res, id) {
     if (!validateParams({ id })) {
         res.statusCode = 400;
         return res.end(JSON.stringify({ errors: validateParams.errors }));
@@ -89,5 +89,3 @@ function deleteProduct(res, id) {
         res.end(JSON.stringify({ error: 'Not Found' }));
     }
 }
-
-module.exports = { getProducts, postProduct, patchProduct, deleteProduct };

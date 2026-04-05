@@ -1,4 +1,10 @@
-function log({ level, method = null, url = null, status = null, message }) {
+export default function log({
+    level,
+    method = null,
+    url = null,
+    status = null,
+    message,
+}) {
     const logEntry = {
         timestamp: new Date().toISOString(),
         level,
@@ -11,5 +17,3 @@ function log({ level, method = null, url = null, status = null, message }) {
     if (level === 'ERROR') process.stderr.write(json + '\n');
     else process.stdout.write(json + '\n');
 }
-
-module.exports = log;

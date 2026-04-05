@@ -1,11 +1,18 @@
-const {
+import {
     getProducts,
     postProduct,
     patchProduct,
     deleteProduct,
-} = require('../controllers/productController');
+} from '../controllers/productController.js';
 
-function handleProductRoutes(req, res, parsedUrl, method, pathname, body) {
+export default function handleProductRoutes(
+    req,
+    res,
+    parsedUrl,
+    method,
+    pathname,
+    body
+) {
     if (method === 'GET' && pathname === '/products') {
         return getProducts(res, parsedUrl);
     }
@@ -24,5 +31,3 @@ function handleProductRoutes(req, res, parsedUrl, method, pathname, body) {
     res.statusCode = 404;
     res.end(JSON.stringify({ error: 'Route not found' }));
 }
-
-module.exports = handleProductRoutes;

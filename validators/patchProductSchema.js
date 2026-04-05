@@ -1,4 +1,5 @@
-const Ajv = require('ajv');
+import Ajv from 'ajv';
+
 const ajv = new Ajv({ allErrors: true });
 
 const patchProductSchema = {
@@ -12,4 +13,5 @@ const patchProductSchema = {
 };
 
 const validatePatchProduct = ajv.compile(patchProductSchema);
-module.exports = validatePatchProduct;
+
+export default validatePatchProduct;

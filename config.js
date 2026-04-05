@@ -17,8 +17,5 @@ if (!['development', 'production'].includes(NODE_ENV)) {
     process.exit(1);
 }
 
-module.exports = {
-    PORT: Number(PORT),
-    HOSTNAME,
-    NODE_ENV,
-};
+const config = { PORT: Number(process.env.PORT), HOSTNAME, NODE_ENV };
+export default config;

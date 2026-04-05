@@ -1,7 +1,7 @@
 {
     "name": "cool_name",
     "version": "1.0.0",
-    "type": "commonjs",
+    "type": "module",
     "devDependencies": {
         "eslint": "^10.2.0",
         "globals": "^17.4.0",
