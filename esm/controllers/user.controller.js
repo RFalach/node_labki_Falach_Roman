@@ -22,5 +22,6 @@ const getUserById = async (request, reply) => {
 };
 
 export default {
+    getUsers,
   getUserById
 };

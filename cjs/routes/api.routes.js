@@ -1,4 +1,4 @@
-const userController = require('controllers/user.controller');
+const userController = require('../controllers/user.controller');
 const { getStats } = require('../state/request-counter');
 
 const getUserByIdSchema = {
@@ -20,6 +20,4 @@ async function apiRoutes(fastify, options) {
   fastify.get('/stats', async () => getStats());
 }
 
-module.exports = {
-  routes: apiRoutes
-};
+module.exports = apiRoutes;

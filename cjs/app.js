@@ -1,4 +1,3 @@
- 
 const fastify  = require('fastify');
 const apiRoutes = require('./routes/api.routes');
 

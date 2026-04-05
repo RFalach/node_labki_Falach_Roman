@@ -1,9 +1,11 @@
-import buildApp from './app.js';
+import { buildApp } from './app.js';
 import config   from './config/env.js';
 import * as userRepository from './repositories/user.repository.js';
+import apiRoutes from './routes/api.routes.js';
 
 const start = async () => {
-  const app = buildApp();
+    const app = buildApp();
+    app.register(apiRoutes);
   try {
     await userRepository.init();
 

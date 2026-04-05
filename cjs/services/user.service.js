@@ -1,7 +1,7 @@
 const userController = require('../controllers/user.controller');
 const userRepository = require('../repositories/user.repository');
 
-const formatter = require('../utils/formatter.mjs');
+const formatter = require('../utils/formatter.js');
 
 const rolesMap = require('../data/roles.json');
 
