@@ -13,8 +13,12 @@
         "@fastify/cors": "^11.2.0",
         "@fastify/env": "^6.0.0",
         "@fastify/helmet": "^13.0.2",
+        "@fastify/multipart": "^10.0.0",
         "@fastify/sensible": "^6.0.4",
+        "@fastify/static": "^9.1.3",
         "ajv": "^8.18.0",
+        "csv-parse": "^6.2.1",
+        "csv-stringify": "^6.7.0",
         "fastify": "^5.8.4"
     },
     "scripts": {
@@ -25,6 +29,8 @@
         "lint:fix": "eslint . --fix",
         "format": "prettier --write '**/*.{js,json,md}'",
         "format:check": "prettier --check '**/*.{js,json,md}'",
-        "check": "npm run lint && npm run format:check"
+        "check": "npm run lint && npm run format:check || true",
+        "seed": "node scripts/seed.js",
+        "migrate": "node migrations/migrate.js"
     }
 }

@@ -1,0 +1,14 @@
+[
+    {
+        "name": "iPad Pro",
+        "price": 799,
+        "qty": 8,
+        "category": "Tablets"
+    },
+    {
+        "name": "Apple Watch",
+        "price": 399,
+        "qty": 15,
+        "category": "Wearables"
+    }
+]

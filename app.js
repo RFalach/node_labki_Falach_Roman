@@ -10,6 +10,15 @@ import sensible from '@fastify/sensible';
 import productRoutes from './routes/productRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 
+import { createBackup } from './utils/backup.utils.js';
+
+import { checkSchema } from './utils/schemaCheck.utils.js';
+
+import fastifyMultipart from '@fastify/multipart';
+
+import fastifyStatic from '@fastify/static';
+import path from 'path';
+
 const isDev = process.env.NODE_ENV === 'development';
 
 const fastify = Fastify({
@@ -44,6 +53,19 @@ await fastify.register(fastifyCors, {
 });
 
 await fastify.register(sensible);
+
+await fastify.register(fastifyMultipart, {
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 1,
+    },
+});
+
+await fastify.register(fastifyStatic, {
+    root: path.join(process.cwd(), 'uploads'),
+    prefix: '/uploads/',
+    decorateReply: false,
+});
 
 fastify.register(productRoutes);
 fastify.register(healthRoutes);
@@ -116,6 +138,9 @@ process.on('unhandledRejection', (err) => {
 });
 
 const start = async () => {
+    await createBackup();
+    await checkSchema(fastify);
+
     try {
         await fastify.listen({
             port: fastify.config.PORT,

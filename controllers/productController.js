@@ -1,15 +1,30 @@
-import INVENTORY from '../data/inventory.js';
+import {
+    findAll,
+    findById,
+    create,
+    update,
+    remove,
+} from '../repositories/item.repository.js';
+
 import {
     PRODUCT_NOT_FOUND,
     INVALID_PARAMS,
     INVALID_BODY,
 } from '../constants/errors.js';
 
+import { getFullImageUrl } from '../utils/image.utils.js';
+
 export async function getProducts(request, reply) {
     const minPriceParam = request.query.minPrice;
     const minPrice = minPriceParam ? parseFloat(minPriceParam) : 0;
 
-    let results = [...INVENTORY];
+    let results = await findAll();
+
+    results = results.map((product) => ({
+        ...product,
+        image: getFullImageUrl(request, product.image),
+    }));
+
     if (!isNaN(minPrice) && minPrice > 0) {
         results = results.filter((p) => p.price >= minPrice);
     }
@@ -27,13 +42,14 @@ export async function postProduct(request, reply) {
         return reply.badRequest({ error: INVALID_BODY });
     }
 
-    const lastId = INVENTORY.length ? INVENTORY[INVENTORY.length - 1].id : 0;
-    const productToSave = { id: lastId + 1, ...data };
-    INVENTORY.push(productToSave);
+    const product = await create(data);
 
     return reply.code(201).send({
         message: 'Product added',
-        product: productToSave,
+        product: {
+            ...product,
+            image: getFullImageUrl(request, product.image),
+        },
     });
 }
 
@@ -43,21 +59,23 @@ export async function patchProduct(request, reply) {
         return reply.badRequest({ error: INVALID_PARAMS });
     }
 
-    const index = INVENTORY.findIndex((p) => p.id === id);
-    if (index === -1) {
-        return reply.notFound({ error: PRODUCT_NOT_FOUND });
-    }
-
     const updates = request.body;
     if (!updates || typeof updates !== 'object') {
         return reply.badRequest({ error: INVALID_BODY });
     }
 
-    INVENTORY[index] = { ...INVENTORY[index], ...updates };
+    const updated = await update(id, updates);
+
+    if (!updated) {
+        return reply.notFound({ error: PRODUCT_NOT_FOUND });
+    }
 
     return reply.code(200).send({
         message: 'Updated',
-        product: INVENTORY[index],
+        product: {
+            ...updated,
+            image: getFullImageUrl(request, updated.image),
+        },
     });
 }
 
@@ -67,12 +85,11 @@ export async function deleteProduct(request, reply) {
         return reply.badRequest({ error: INVALID_PARAMS });
     }
 
-    const index = INVENTORY.findIndex((p) => p.id === id);
-    if (index === -1) {
+    const success = await remove(id);
+
+    if (!success) {
         return reply.notFound({ error: PRODUCT_NOT_FOUND });
     }
-
-    INVENTORY.splice(index, 1);
 
     return reply.code(200).send({ message: 'Deleted' });
 }
