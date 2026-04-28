@@ -25,25 +25,41 @@ import { processImportedFile } from '../utils/import.utils.js';
 
 import { saveImage, getFullImageUrl } from '../utils/image.utils.js';
 
+import { fetchExternalData } from '../utils/apiClient.utils.js';
+
+const productResponse = {
+    type: 'object',
+    properties: {
+        id: { type: 'integer' },
+        name: { type: 'string' },
+        price: { type: 'number' },
+        qty: { type: 'integer' },
+        category: { type: 'string' },
+        image: { type: ['string', 'null'] },
+    },
+};
+
 export default async function productRoutes(fastify) {
     // GET /products
     fastify.get(
         '/products',
         {
             schema: {
+                tags: ['products'],
+                summary: 'Get all products',
+                description: 'Returns list of all products with optional minPrice filter',
                 querystring: {
                     type: 'object',
                     properties: {
-                        minPrice: { type: 'number', minimum: 0 },
+                        minPrice: { type: 'number', minimum: 0, description: 'Minimum price filter' },
                     },
-                    additionalProperties: false,
                 },
                 response: {
                     200: {
                         type: 'object',
                         properties: {
                             count: { type: 'integer' },
-                            items: { type: 'array', items: productSchema },
+                            items: { type: 'array', items: productResponse },
                         },
                     },
                 },
@@ -57,13 +73,16 @@ export default async function productRoutes(fastify) {
         '/products',
         {
             schema: {
+                tags: ['products'],
+                summary: 'Create new product',
+                description: 'Creates a new product and returns it',
                 body: productSchema,
                 response: {
                     201: {
                         type: 'object',
                         properties: {
                             message: { type: 'string' },
-                            product: productSchema,
+                            product: productResponse,
                         },
                     },
                 },
@@ -72,11 +91,14 @@ export default async function productRoutes(fastify) {
         postProduct
     );
 
-    // PATCH /products/id
+    // PATCH /products/:id
     fastify.patch(
         '/products/:id',
         {
             schema: {
+                tags: ['products'],
+                summary: 'Update product',
+                description: 'Updates product by ID',
                 params: paramsSchema,
                 body: patchProductSchema,
                 response: {
@@ -84,7 +106,7 @@ export default async function productRoutes(fastify) {
                         type: 'object',
                         properties: {
                             message: { type: 'string' },
-                            product: patchProductSchema,
+                            product: productResponse,
                         },
                     },
                 },
@@ -93,11 +115,14 @@ export default async function productRoutes(fastify) {
         patchProduct
     );
 
-    // DELETE /products/id
+    // DELETE /products/:id
     fastify.delete(
         '/products/:id',
         {
             schema: {
+                tags: ['products'],
+                summary: 'Delete product',
+                description: 'Deletes product by ID',
                 params: paramsSchema,
                 response: {
                     200: {
@@ -111,7 +136,19 @@ export default async function productRoutes(fastify) {
     );
 
     // GET /products/export
-    fastify.get('/products/export', async (request, reply) => {
+    fastify.get('/products/export', {
+        schema: {
+            tags: ['products'],
+            summary: 'Export products to CSV',
+            description: 'Returns all products as CSV file',
+            response: {
+                200: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
+        },
+    }, async (request, reply) => {
         try {
             const products = await findAll();
 
@@ -171,7 +208,25 @@ export default async function productRoutes(fastify) {
     });
 
     // POST /products/import
-    fastify.post('/products/import', async (request, reply) => {
+    fastify.post('/products/import', {
+        schema: {
+            tags: ['products'],
+            summary: 'Import products from file',
+            description: 'Accepts CSV or JSON file and imports products',
+            consumes: ['multipart/form-data'],
+            response: {
+                200: {
+                    type: 'object',
+                    properties: {
+                        message: { type: 'string' },
+                        imported: { type: 'integer' },
+                        rejected: { type: 'integer' },
+                        errors: { type: 'array' },
+                    },
+                },
+            },
+        },
+    }, async (request, reply) => {
         try {
             const data = await request.file();
 
@@ -232,57 +287,130 @@ export default async function productRoutes(fastify) {
     fastify.post(
         '/products/:id/image',
         {
+            schema: {
+                tags: ['products'],
+                summary: 'Upload product image',
+                description: 'Uploads image for product (JPEG/PNG, max 5MB)',
+                params: paramsSchema,
+                consumes: ['multipart/form-data'],
+                response: {
+                    200: {
+                        type: 'object',
+                        properties: {
+                            message: { type: 'string' },
+                            product: productResponse,
+                        },
+                    },
+                },
+            },
             config: {
                 consumes: ['multipart/form-data'],
             },
         },
         async (request, reply) => {
-            try {
-                const { id } = request.params;
+	    try {
+		const { id } = request.params;
 
-                const product = await findById(Number(id));
-                if (!product) {
-                    return reply.notFound(`Product with id ${id} not found`);
-                }
+		const product = await findById(Number(id));
+		if (!product) {
+		    return reply.notFound(`Product with id ${id} not found`);
+		}
 
-                const data = await request.file();
+		const data = await request.file();
 
-                if (!data) {
-                    return reply.badRequest('No file uploaded');
-                }
+		if (!data) {
+		    return reply.badRequest('No file uploaded');
+		}
 
-                const imagePath = await saveImage(id, data);
+		const imagePath = await saveImage(id, data);
 
-                const updatedProduct = await update(Number(id), {
-                    image: imagePath,
-                });
+		const updatedProduct = await update(Number(id), {
+		    image: imagePath,
+		});
 
-                const fullImageUrl = getFullImageUrl(
-                    request,
-                    updatedProduct.image
-                );
+		const fullImageUrl = getFullImageUrl(
+		    request,
+		    updatedProduct.image
+		);
 
-                reply.send({
-                    message: 'Image uploaded successfully',
-                    product: {
-                        ...updatedProduct,
-                        image: fullImageUrl,
-                    },
-                });
-            } catch (error) {
-                request.log.error('Image upload error:', error);
+		reply.send({
+		    message: 'Image uploaded successfully',
+		    product: {
+			...updatedProduct,
+			image: fullImageUrl,
+		    },
+		});
+	    } catch (error) {
+		request.log.error('Image upload error:', error);
 
-                if (error.message.includes('Invalid file type')) {
-                    return reply.badRequest(error.message);
-                }
-                if (error.message.includes('File size exceeds')) {
-                    return reply.badRequest(error.message);
-                }
+		if (error.message.includes('Invalid file type')) {
+		    return reply.badRequest(error.message);
+		}
+		if (error.message.includes('File size exceeds')) {
+		    return reply.badRequest(error.message);
+		}
 
-                reply.internalServerError(
-                    'Failed to upload image: ' + error.message
-                );
-            }
-        }
+		reply.internalServerError(
+		    'Failed to upload image: ' + error.message
+		);
+	    }
+	}
     );
+
+    // GET /products/:id/details
+    fastify.get('/products/:id/details', {
+	schema: {
+            tags: ['products'],
+            summary: 'Get product with external details',
+            description: 'Returns product combined with category data from external service',
+            params: paramsSchema,
+	},
+    }, async (request, reply) => {
+	const id = parseInt(request.params.id, 10);
+	
+	const product = await findById(id);
+	
+	if (!product) {
+            return reply.notFound(`Product with id ${id} not found`);
+	}
+	
+	const productWithImage = {
+            ...product,
+            image: getFullImageUrl(request, product.image)
+	};
+	
+	try {
+            const externalData = await fetchExternalData('http://localhost:3001/categories');
+            
+            if (externalData && Array.isArray(externalData)) {
+		const category = externalData.find(
+                    c => c.name.toLowerCase() === (productWithImage.category || '').toLowerCase()
+		);
+		
+		if (category) {
+                    return reply.send({
+			...productWithImage,
+			categoryDetails: {
+                            id: category.id,
+                            name: category.name,
+                            tax: category.tax
+			}
+                    });
+		}
+            }
+            
+            return reply.send({
+		...productWithImage,
+		categoryDetails: null
+            });
+            
+	} catch (error) {
+            request.log.warn('Failed to fetch external data:', error.message);
+            
+            return reply.send({
+		...productWithImage,
+		categoryDetails: null
+            });
+	}
+    });
 }

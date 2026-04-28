@@ -1,23 +1,22 @@
 import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifyHelmet from '@fastify/helmet';
-
 import fastifyEnv from '@fastify/env';
 import envSchema from './schemas/env.schema.js';
-
 import sensible from '@fastify/sensible';
-
 import productRoutes from './routes/productRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
-
 import { createBackup } from './utils/backup.utils.js';
-
 import { checkSchema } from './utils/schemaCheck.utils.js';
-
 import fastifyMultipart from '@fastify/multipart';
-
 import fastifyStatic from '@fastify/static';
 import path from 'path';
+
+import fastifyRateLimit from '@fastify/rate-limit';
+import productRoutesV2 from './routes/productRoutesV2.js';
+
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -54,6 +53,18 @@ await fastify.register(fastifyCors, {
 
 await fastify.register(sensible);
 
+await fastify.register(fastifyRateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    errorResponseBuilder: (request, context) => {
+        return {
+            statusCode: 429,
+            error: 'Too Many Requests',
+            message: `Rate limit exceeded. Try again in ${Math.ceil((context.ttl) / 1000)} seconds.`
+        };
+    }
+});
+
 await fastify.register(fastifyMultipart, {
     limits: {
         fileSize: 10 * 1024 * 1024,
@@ -67,7 +78,35 @@ await fastify.register(fastifyStatic, {
     decorateReply: false,
 });
 
-fastify.register(productRoutes);
+await fastify.register(fastifySwagger, {
+    openapi: {
+        info: {
+            title: 'Inventory API',
+            description: 'API для магазину техніки (Варіант 1)',
+            version: '1.0.0',
+        },
+        servers: [
+            {
+                url: `http://localhost:${fastify.config.PORT || 5000}`,
+                description: 'Development server',
+            },
+        ],
+        tags: [
+            { name: 'products', description: 'Products endpoints' },
+        ],
+    },
+});
+
+await fastify.register(fastifySwaggerUi, {
+    routePrefix: '/docs',
+    uiConfig: {
+        docExpansion: 'list',
+        deepLinking: true,
+    },
+});
+
+fastify.register(productRoutes, { prefix: '/api/v1' });
+fastify.register(productRoutesV2, { prefix: '/api/v2' });
 fastify.register(healthRoutes);
 
 fastify.addHook('onClose', async (instance, done) => {

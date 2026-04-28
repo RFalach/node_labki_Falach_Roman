@@ -1,0 +1,5 @@
+{
+  "categories": [
+    { "id": 1, "name": "Electronics", "tax": 0.2 }
+  ]
+}
