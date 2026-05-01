@@ -17,6 +17,7 @@ import {
     remove,
 } from '../repositories/item.repository.js';
 
+import { Readable } from 'stream';
 import { stringify } from 'csv-stringify';
 
 import fs from 'fs/promises';
@@ -26,6 +27,10 @@ import { processImportedFile } from '../utils/import.utils.js';
 import { saveImage, getFullImageUrl } from '../utils/image.utils.js';
 
 import { fetchExternalData } from '../utils/apiClient.utils.js';
+
+import fsSync from 'fs';
+import { pipeline } from 'stream/promises';
+import { createGunzip } from 'zlib';
 
 const productResponse = {
     type: 'object',
@@ -137,76 +142,79 @@ export default async function productRoutes(fastify) {
 
     // GET /products/export
     fastify.get('/products/export', {
-        schema: {
+	schema: {
             tags: ['products'],
             summary: 'Export products to CSV',
-            description: 'Returns all products as CSV file',
+            description: 'Returns all products as CSV file. Use ?transform=true to convert USD to UAH',
+            querystring: {
+		type: 'object',
+		properties: {
+                    transform: { type: 'boolean', default: false }
+		}
+            },
             response: {
-                200: {
+		200: {
                     type: 'string',
                     format: 'binary',
-                },
+		},
             },
-        },
+	},
     }, async (request, reply) => {
-        try {
+	try {
+            const shouldTransform = request.query.transform === true;
+            const rate = fastify.config.USD_TO_UAH || 41.5;
+            
             const products = await findAll();
+            
+            let processedProducts = products;
+            
+            if (shouldTransform) {
+		processedProducts = products.map(p => ({
+                    ...p,
+                    price: p.price * rate
+		}));
+            }
 
-            request.log.info(`Found ${products.length} products for export`);
-
-            const csvData = products.map((product) => ({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                qty: product.qty,
-                category: product.category || '',
-                image: getFullImageUrl(request, product.image),
+            const csvData = processedProducts.map((product) => ({
+		id: product.id,
+		name: product.name,
+		price: product.price,
+		qty: product.qty,
+		category: product.category || '',
+		image: getFullImageUrl(request, product.image),
             }));
 
             const csvString = await new Promise((resolve, reject) => {
-                stringify(
+		stringify(
                     csvData,
                     {
-                        header: true,
-                        columns: [
-                            'id',
-                            'name',
-                            'price',
-                            'qty',
-                            'category',
-                            'image',
-                        ],
+			header: true,
+			columns: ['id', 'name', 'price', 'qty', 'category', 'image'],
                     },
                     (err, output) => {
-                        if (err) {
+			if (err) {
                             request.log.error('CSV stringify error:', err);
                             reject(err);
-                        } else {
+			} else {
                             resolve(output);
-                        }
+			}
                     }
-                );
+		);
             });
 
             reply
-                .header('Content-Type', 'text/csv')
-                .header(
-                    'Content-Disposition',
-                    'attachment; filename="products.csv"'
-                )
-                .send(csvString);
-        } catch (error) {
+		.header('Content-Type', 'text/csv')
+		.header('Content-Disposition', 'attachment; filename="products.csv"')
+		.send(csvString);
+	} catch (error) {
             request.log.error('Export error details:', {
-                message: error.message,
-                stack: error.stack,
-                name: error.name,
+		message: error.message,
+		stack: error.stack,
             });
-            reply.internalServerError(
-                'Failed to export products: ' + error.message
-            );
-        }
+            reply.internalServerError('Failed to export products: ' + error.message);
+	}
     });
-
+    
     // POST /products/import
     fastify.post('/products/import', {
         schema: {
@@ -413,4 +421,74 @@ export default async function productRoutes(fastify) {
             });
 	}
     });
+
+    // GET /products/stream
+    fastify.get('/products/stream', {
+	schema: {
+            tags: ['products'],
+            summary: 'Stream products as NDJSON',
+            description: 'Streams products one by one in application/x-ndjson format',
+	},
+    }, async (request, reply) => {
+	const products = await findAll();
+	
+	reply.type('application/x-ndjson');
+	
+	const stream = Readable.from(
+            (async function* () {
+		for (const product of products) {
+                    const productWithUrl = {
+			...product,
+			image: getFullImageUrl(request, product.image)
+                    };
+                    yield JSON.stringify(productWithUrl) + '\n';
+		}
+            })()
+	);
+	
+	return reply.send(stream);
+    });
+
+    // GET /backups/:timestamp
+    fastify.get('/backups/:timestamp', {
+	schema: {
+            tags: ['backups'],
+            summary: 'Download backup file',
+            description: 'Returns backup .gz file. Protected by API key in header.',
+            params: {
+		type: 'object',
+		required: ['timestamp'],
+		properties: {
+                    timestamp: { type: 'string' }
+		}
+            },
+            headers: {
+		type: 'object',
+		properties: {
+                    'x-api-key': { type: 'string' }
+		}
+            }
+	}
+    }, async (request, reply) => {
+	const apiKey = request.headers['x-api-key'];
+	
+	if (!apiKey || apiKey !== fastify.config.ADMIN_API_KEY) {
+            return reply.status(401).send({ error: 'Unauthorized: Invalid API key' });
+	}
+	
+	const { timestamp } = request.params;
+	const backupPath = path.join(process.cwd(), 'data', 'backups', `${timestamp}.gz`);
+	
+	if (!fsSync.existsSync(backupPath)) {
+            return reply.notFound(`Backup ${timestamp} not found`);
+	}
+	
+	reply
+            .header('Content-Type', 'application/gzip')
+            .header('Content-Disposition', `attachment; filename="${timestamp}.gz"`);
+	
+	return reply.send(fsSync.createReadStream(backupPath));
+    });
+    
 }
+

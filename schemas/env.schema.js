@@ -16,5 +16,6 @@ export default {
             default: 'development',
         },
         ADMIN_API_KEY: { type: 'string' },
+	USD_TO_UAH: { type: 'number', default: 43.9 },
     },
 };

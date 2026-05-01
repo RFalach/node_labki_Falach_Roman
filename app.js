@@ -18,6 +18,10 @@ import productRoutesV2 from './routes/productRoutesV2.js';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 
+import fastifyWebsocket from '@fastify/websocket';
+import { eventBus } from './utils/eventBus.utils.js';
+import { findAll } from './repositories/item.repository.js';
+
 const isDev = process.env.NODE_ENV === 'development';
 
 const fastify = Fastify({
@@ -103,6 +107,40 @@ await fastify.register(fastifySwaggerUi, {
         docExpansion: 'list',
         deepLinking: true,
     },
+});
+
+await fastify.register(fastifyWebsocket);
+
+fastify.get('/ws', { websocket: true }, (socket, request) => {
+    console.log('WebSocket client connected');
+
+    findAll().then(products => {
+        socket.send(JSON.stringify({
+            event: 'connected',
+            data: products
+        }));
+    });
+
+    const onCreated = (data) => {
+        socket.send(JSON.stringify({ event: 'created', data }));
+    };
+    const onUpdated = (data) => {
+        socket.send(JSON.stringify({ event: 'updated', data }));
+    };
+    const onDeleted = (id) => {
+        socket.send(JSON.stringify({ event: 'deleted', id }));
+    };
+
+    eventBus.on('created', onCreated);
+    eventBus.on('updated', onUpdated);
+    eventBus.on('deleted', onDeleted);
+
+    socket.on('close', () => {
+        eventBus.off('created', onCreated);
+        eventBus.off('updated', onUpdated);
+        eventBus.off('deleted', onDeleted);
+        console.log('WebSocket client disconnected');
+    });
 });
 
 fastify.register(productRoutes, { prefix: '/api/v1' });

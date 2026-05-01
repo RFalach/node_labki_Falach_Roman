@@ -14,6 +14,8 @@ import {
 
 import { getFullImageUrl } from '../utils/image.utils.js';
 
+import { eventBus } from '../utils/eventBus.utils.js';
+
 export async function getProducts(request, reply) {
     const minPriceParam = request.query.minPrice;
     const minPrice = minPriceParam ? parseFloat(minPriceParam) : 0;
@@ -44,6 +46,8 @@ export async function postProduct(request, reply) {
 
     const product = await create(data);
 
+    eventBus.emit('created', product);
+
     return reply.code(201).send({
         message: 'Product added',
         product: {
@@ -70,6 +74,8 @@ export async function patchProduct(request, reply) {
         return reply.notFound({ error: PRODUCT_NOT_FOUND });
     }
 
+    eventBus.emit('updated', updated);
+
     return reply.code(200).send({
         message: 'Updated',
         product: {
@@ -90,6 +96,8 @@ export async function deleteProduct(request, reply) {
     if (!success) {
         return reply.notFound({ error: PRODUCT_NOT_FOUND });
     }
+
+    eventBus.emit('deleted', id);
 
     return reply.code(200).send({ message: 'Deleted' });
 }
