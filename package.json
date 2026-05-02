@@ -38,6 +38,7 @@
         "format:check": "prettier --check '**/*.{js,json,md}'",
         "check": "npm run lint && npm run format:check || true",
         "seed": "node scripts/seed.js",
+	"seed:force": "node scripts/seed.js --force",
         "migrate": "node migrations/migrate.js",
         "external": "json-server db.json --port 3001"
     }
