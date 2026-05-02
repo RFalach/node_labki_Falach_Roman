@@ -9,13 +9,7 @@ import { productSchema } from '../schemas/productSchema.js';
 import { patchProductSchema } from '../schemas/patchProductSchema.js';
 import { paramsSchema } from '../schemas/paramsSchema.js';
 
-import {
-    findAll,
-    findById,
-    create,
-    update,
-    remove,
-} from '../repositories/item.repository.js';
+import { initRepository, findAll, findById, create, update, remove } from '../repositories/item.repository.js';
 
 import { Readable } from 'stream';
 import { stringify } from 'csv-stringify';
@@ -45,6 +39,8 @@ const productResponse = {
 };
 
 export default async function productRoutes(fastify) {
+    initRepository(fastify.db);
+    
     // GET /products
     fastify.get(
         '/products',
