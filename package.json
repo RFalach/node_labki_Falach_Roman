@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "type": "module",
     "devDependencies": {
+        "drizzle-kit": "^0.31.10",
         "eslint": "^10.2.0",
         "globals": "^17.4.0",
         "json-server": "^0.17.4",
@@ -24,7 +25,10 @@
         "ajv": "^8.18.0",
         "csv-parse": "^6.2.1",
         "csv-stringify": "^6.7.0",
-        "fastify": "^5.8.4"
+        "drizzle-orm": "^0.45.2",
+        "fastify": "^5.8.4",
+        "fastify-plugin": "^5.1.0",
+        "mysql2": "^3.22.3"
     },
     "scripts": {
         "start": "node --env-file=.env.example app.js",
@@ -35,7 +39,10 @@
         "format": "prettier --write '**/*.{js,json,md}'",
         "format:check": "prettier --check '**/*.{js,json,md}'",
         "check": "npm run lint && npm run format:check || true",
-        "seed": "node scripts/seed.js",
+	"seed": "node --env-file=.env.example scripts/seed.js",
+	"seed:force": "node --env-file=.env.example scripts/seed.js --force",
+	"db:generate": "drizzle-kit generate",
+	"db:migrate": "drizzle-kit migrate",
         "migrate": "node migrations/migrate.js",
         "external": "json-server db.json --port 3001"
     }

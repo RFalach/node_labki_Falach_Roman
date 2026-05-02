@@ -1,6 +1,6 @@
 export default {
     type: 'object',
-    required: ['PORT', 'HOSTNAME', 'NODE_ENV'],
+    required: ['PORT', 'HOSTNAME', 'NODE_ENV', 'MYSQL_HOST', 'MYSQL_PORT', 'MYSQL_USER', 'MYSQL_DB'],
     properties: {
         PORT: {
             type: 'number',
@@ -17,5 +17,11 @@ export default {
         },
         ADMIN_API_KEY: { type: 'string' },
 	USD_TO_UAH: { type: 'number', default: 43.9 },
+
+	MYSQL_HOST: { type: 'string', default: 'localhost' },
+	MYSQL_PORT: { type: 'number', default: 3306 },
+	MYSQL_USER: { type: 'string', default: 'root' },
+	MYSQL_PASSWORD: { type: 'string', default: '' },
+	MYSQL_DB: { type: 'string', default: 'inventory' },
     },
 };
