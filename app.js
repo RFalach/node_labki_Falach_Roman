@@ -22,6 +22,8 @@ import fastifyWebsocket from '@fastify/websocket';
 import { eventBus } from './utils/eventBus.utils.js';
 import { findAll } from './repositories/item.repository.js';
 
+import mongoPlugin from './db/mongo.js';
+
 const isDev = process.env.NODE_ENV === 'development';
 
 const fastify = Fastify({
@@ -44,6 +46,8 @@ await fastify.register(fastifyEnv, {
     schema: envSchema,
     dotenv: true,
 });
+
+await fastify.register(mongoPlugin);
 
 await fastify.register(fastifyHelmet, { global: true });
 

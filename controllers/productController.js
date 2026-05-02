@@ -58,8 +58,8 @@ export async function postProduct(request, reply) {
 }
 
 export async function patchProduct(request, reply) {
-    const id = parseInt(request.params.id, 10);
-    if (isNaN(id)) {
+    const id = request.params.id;
+    if (!id) {
         return reply.badRequest({ error: INVALID_PARAMS });
     }
 
@@ -86,8 +86,8 @@ export async function patchProduct(request, reply) {
 }
 
 export async function deleteProduct(request, reply) {
-    const id = parseInt(request.params.id, 10);
-    if (isNaN(id)) {
+    const id = request.params.id;
+    if (!id) {
         return reply.badRequest({ error: INVALID_PARAMS });
     }
 

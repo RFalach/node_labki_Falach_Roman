@@ -9,13 +9,7 @@ import { productSchema } from '../schemas/productSchema.js';
 import { patchProductSchema } from '../schemas/patchProductSchema.js';
 import { paramsSchema } from '../schemas/paramsSchema.js';
 
-import {
-    findAll,
-    findById,
-    create,
-    update,
-    remove,
-} from '../repositories/item.repository.js';
+import { findAll, findById, create, update, remove } from '../repositories/item.repository.js';
 
 import { Readable } from 'stream';
 import { stringify } from 'csv-stringify';
@@ -35,7 +29,7 @@ import { createGunzip } from 'zlib';
 const productResponse = {
     type: 'object',
     properties: {
-        id: { type: 'integer' },
+        id: { type: 'string' },
         name: { type: 'string' },
         price: { type: 'number' },
         qty: { type: 'integer' },

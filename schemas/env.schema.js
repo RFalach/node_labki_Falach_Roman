@@ -17,5 +17,7 @@ export default {
         },
         ADMIN_API_KEY: { type: 'string' },
 	USD_TO_UAH: { type: 'number', default: 43.9 },
+	MONGO_URL: { type: 'string', default: 'mongodb://localhost:27017' },
+	MONGO_DB_NAME: { type: 'string', default: 'inventory' },
     },
 };

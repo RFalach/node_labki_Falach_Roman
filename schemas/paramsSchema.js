@@ -1,7 +1,7 @@
 export const paramsSchema = {
     type: 'object',
     properties: {
-        id: { type: 'integer', minimum: 1 },
+        id: { type: 'string' },
     },
     required: ['id'],
     additionalProperties: false,
