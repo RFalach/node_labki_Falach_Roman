@@ -26,6 +26,10 @@ import fsSync from 'fs';
 import { pipeline } from 'stream/promises';
 import { createGunzip } from 'zlib';
 
+import { initApiClient } from '../utils/apiClient.utils.js';
+
+import { REDIS_KEYS } from '../constants/redisKeys.js';
+
 const productResponse = {
     type: 'object',
     properties: {
@@ -39,8 +43,22 @@ const productResponse = {
 };
 
 export default async function productRoutes(fastify) {
-    initRepository(fastify.db);
-    
+    initApiClient(fastify.redis);
+
+    fastify.addHook('onResponse', async (request, reply) => {
+	const method = request.method;
+	if (['POST', 'PATCH', 'DELETE'].includes(method) && 
+            request.url.includes('/api/v1/products') &&
+            reply.statusCode < 400) {
+            
+            const keys = await fastify.redis.keys(`${REDIS_KEYS.PRODUCTS_LIST}*`);
+            if (keys.length > 0) {
+		await fastify.redis.del(keys);
+		fastify.log.info('Cache invalidated after data change');
+            }
+	}
+    });
+
     // GET /products
     fastify.get(
         '/products',

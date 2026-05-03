@@ -10,3 +10,9 @@ export const products = mysqlTable('products', {
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
+
+export const users = mysqlTable('users', {
+    id: int('id').autoincrement().primaryKey(),
+    email: varchar('email', { length: 255 }).notNull().unique(),
+    password: varchar('password', { length: 255 }).notNull(),
+});

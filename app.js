@@ -24,6 +24,8 @@ import { findAll } from './repositories/item.repository.js';
 
 import drizzlePlugin from './db/drizzle.js';
 
+import fastifyRedis from '@fastify/redis';
+
 const isDev = process.env.NODE_ENV === 'development';
 
 const fastify = Fastify({
@@ -61,14 +63,20 @@ await fastify.register(fastifyCors, {
 
 await fastify.register(sensible);
 
+await fastify.register(fastifyRedis, {
+    host: fastify.config.REDIS_HOST,
+    port: fastify.config.REDIS_PORT,
+});
+
 await fastify.register(fastifyRateLimit, {
     max: 100,
     timeWindow: '1 minute',
+    redis: fastify.redis,
     errorResponseBuilder: (request, context) => {
         return {
             statusCode: 429,
             error: 'Too Many Requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((context.ttl) / 1000)} seconds.`
+            message: `Rate limit exceeded. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`
         };
     }
 });

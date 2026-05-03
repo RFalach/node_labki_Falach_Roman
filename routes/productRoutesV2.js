@@ -1,5 +1,6 @@
-import { findAll } from '../repositories/item.repository.js';
+import { findAll, initRepository } from '../repositories/item.repository.js';
 import { getFullImageUrl } from '../utils/image.utils.js';
+import { REDIS_KEYS } from '../constants/redisKeys.js';
 
 const productResponse = {
     type: 'object',
@@ -14,6 +15,8 @@ const productResponse = {
 };
 
 export default async function productRoutesV2(fastify) {
+    initRepository(fastify.db);
+
     fastify.get('/products', {
         schema: {
             tags: ['products'],
@@ -22,9 +25,9 @@ export default async function productRoutesV2(fastify) {
             querystring: {
                 type: 'object',
                 properties: {
-                    page: { type: 'integer', minimum: 1, default: 1, description: 'Page number' },
-                    limit: { type: 'integer', minimum: 1, maximum: 100, default: 10, description: 'Items per page' },
-                    minPrice: { type: 'number', minimum: 0, description: 'Minimum price filter' }
+                    page: { type: 'integer', minimum: 1, default: 1 },
+                    limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
+                    minPrice: { type: 'number', minimum: 0 }
                 },
             },
             response: {
@@ -46,14 +49,21 @@ export default async function productRoutesV2(fastify) {
             },
         },
     }, async (request, reply) => {
-	const page = request.query.page || 1;
+        const page = request.query.page || 1;
         const limit = request.query.limit || 10;
         const minPrice = request.query.minPrice;
+
+        const cacheKey = `${REDIS_KEYS.PRODUCTS_LIST}:page=${page}&limit=${limit}&minPrice=${minPrice || 0}`;
+        
+        const cached = await fastify.redis.get(cacheKey);
+        if (cached) {
+            return reply.code(200).send(JSON.parse(cached));
+        }
 
         let results = await findAll();
 
         if (minPrice !== undefined && minPrice > 0) {
-            results = results.filter(p => p.price >= minPrice);
+            results = results.filter(p => Number(p.price) >= minPrice);
         }
 
         results = results.map(product => ({
@@ -64,17 +74,15 @@ export default async function productRoutesV2(fastify) {
         const total = results.length;
         const totalPages = Math.ceil(total / limit);
         const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
-        const paginatedItems = results.slice(startIndex, endIndex);
+        const paginatedItems = results.slice(startIndex, startIndex + limit);
 
-        return reply.code(200).send({
+        const response = {
             data: paginatedItems,
-            meta: {
-                total,
-                page,
-                limit,
-                totalPages
-            }
-        });
+            meta: { total, page, limit, totalPages }
+        };
+
+        await fastify.redis.setex(cacheKey, 86400, JSON.stringify(response));
+
+        return reply.code(200).send(response);
     });
 }

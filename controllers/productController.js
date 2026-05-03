@@ -16,6 +16,8 @@ import { getFullImageUrl } from '../utils/image.utils.js';
 
 import { eventBus } from '../utils/eventBus.utils.js';
 
+import { REDIS_KEYS } from '../constants/redisKeys.js';
+
 export async function getProducts(request, reply) {
     const minPriceParam = request.query.minPrice;
     const minPrice = minPriceParam ? parseFloat(minPriceParam) : 0;

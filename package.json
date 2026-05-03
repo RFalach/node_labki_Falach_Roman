@@ -17,6 +17,7 @@
         "@fastify/helmet": "^13.0.2",
         "@fastify/multipart": "^10.0.0",
         "@fastify/rate-limit": "^10.3.0",
+        "@fastify/redis": "^7.2.0",
         "@fastify/sensible": "^6.0.4",
         "@fastify/static": "^9.1.3",
         "@fastify/swagger": "^9.7.0",
@@ -39,10 +40,10 @@
         "format": "prettier --write '**/*.{js,json,md}'",
         "format:check": "prettier --check '**/*.{js,json,md}'",
         "check": "npm run lint && npm run format:check || true",
-	"seed": "node --env-file=.env.example scripts/seed.js",
-	"seed:force": "node --env-file=.env.example scripts/seed.js --force",
-	"db:generate": "drizzle-kit generate",
-	"db:migrate": "drizzle-kit migrate",
+        "seed": "node --env-file=.env.example scripts/seed.js",
+        "seed:force": "node --env-file=.env.example scripts/seed.js --force",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
         "migrate": "node migrations/migrate.js",
         "external": "json-server db.json --port 3001"
     }
