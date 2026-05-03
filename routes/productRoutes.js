@@ -43,6 +43,14 @@ const productResponse = {
 };
 
 export default async function productRoutes(fastify) {
+    fastify.addHook('onRequest', async (request, reply) => {
+	if (['POST', 'PATCH', 'DELETE'].includes(request.method)) {
+            if (!request.session.user) {
+		return reply.unauthorized('Authentication required');
+            }
+	}
+    });
+    
     initApiClient(fastify.redis);
 
     fastify.addHook('onResponse', async (request, reply) => {

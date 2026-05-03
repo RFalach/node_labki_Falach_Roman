@@ -1,6 +1,6 @@
 export default {
     type: 'object',
-    required: ['PORT', 'HOSTNAME', 'NODE_ENV', 'MYSQL_HOST', 'MYSQL_PORT', 'MYSQL_USER', 'MYSQL_DB'],
+    required: ['PORT', 'HOSTNAME', 'NODE_ENV', 'MYSQL_HOST', 'MYSQL_PORT', 'MYSQL_USER', 'MYSQL_DB', 'SESSION_SECRET'],
     properties: {
         PORT: {
             type: 'number',
@@ -26,5 +26,7 @@ export default {
 	
 	REDIS_HOST: { type: 'string', default: 'localhost' },
 	REDIS_PORT: { type: 'number', default: 6379 },
+
+	SESSION_SECRET: { type: 'string', default: 'super_secret_key_111111111111111111111111111' },
     },
 };
