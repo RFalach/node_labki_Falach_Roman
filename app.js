@@ -26,6 +26,11 @@ import drizzlePlugin from './db/drizzle.js';
 
 import fastifyRedis from '@fastify/redis';
 
+import fastifyJwt from '@fastify/jwt';
+import fastifyCookie from '@fastify/cookie';
+
+import authRoutes from './routes/authRoutes.js';
+
 const isDev = process.env.NODE_ENV === 'development';
 
 const fastify = Fastify({
@@ -66,6 +71,20 @@ await fastify.register(sensible);
 await fastify.register(fastifyRedis, {
     host: fastify.config.REDIS_HOST,
     port: fastify.config.REDIS_PORT,
+});
+
+await fastify.register(fastifyCookie);
+
+await fastify.register(fastifyJwt, {
+    secret: fastify.config.JWT_SECRET,
+    cookie: {
+        cookieName: 'refresh_token',
+        signed: false,
+    },
+    trusted: async (request, decoded) => {
+        const blacklisted = await fastify.redis.get(`blacklist:${decoded.jti}`);
+        return !blacklisted;
+    },
 });
 
 await fastify.register(fastifyRateLimit, {
@@ -158,6 +177,7 @@ fastify.get('/ws', { websocket: true }, (socket, request) => {
 fastify.register(productRoutes, { prefix: '/api/v1' });
 fastify.register(productRoutesV2, { prefix: '/api/v2' });
 fastify.register(healthRoutes);
+fastify.register(authRoutes);
 
 fastify.addHook('onClose', async (instance, done) => {
     instance.log.info('Server is closing...');

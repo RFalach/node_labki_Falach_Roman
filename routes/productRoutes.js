@@ -43,6 +43,16 @@ const productResponse = {
 };
 
 export default async function productRoutes(fastify) {
+    fastify.addHook('onRequest', async (request, reply) => {
+	if (['POST', 'PATCH', 'DELETE'].includes(request.method)) {
+            try {
+		await request.jwtVerify();
+            } catch (err) {
+		return reply.unauthorized('Invalid or missing token');
+            }
+	}
+    });
+    
     initApiClient(fastify.redis);
 
     fastify.addHook('onResponse', async (request, reply) => {

@@ -26,5 +26,7 @@ export default {
 	
 	REDIS_HOST: { type: 'string', default: 'localhost' },
 	REDIS_PORT: { type: 'number', default: 6379 },
+
+	JWT_SECRET: { type: 'string', default: '1111111111111111111111111111111111111111111111' },
     },
 };
