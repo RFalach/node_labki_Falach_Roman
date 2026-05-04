@@ -1,0 +1,14 @@
+process.env.NODE_ENV = 'test';
+process.env.MYSQL_DB = 'inventory_test';
+process.env.MYSQL_USER = 'fastify';
+process.env.MYSQL_PASSWORD = 'fastify123';
+process.env.MYSQL_HOST = 'localhost';
+process.env.MYSQL_PORT = '3306';
+process.env.REDIS_HOST = 'localhost';
+process.env.REDIS_PORT = '6379';
+process.env.JWT_SECRET = '1111111111111111111111111111111111111111111111';
+process.env.SESSION_SECRET = '1111111111111111111111111111111111111111111111';
+process.env.ADMIN_API_KEY = 'test-key';
+process.env.USD_TO_UAH = '44.0';
+process.env.PORT = '0';
+process.env.HOSTNAME = 'localhost';

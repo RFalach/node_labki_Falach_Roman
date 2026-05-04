@@ -9,7 +9,6 @@ async function drizzlePlugin(fastify) {
         user: fastify.config.MYSQL_USER,
         password: fastify.config.MYSQL_PASSWORD,
         database: fastify.config.MYSQL_DB,
-        socketPath: '/run/mysqld/mysqld.sock',
         waitForConnections: true,
         connectionLimit: 10,
     });
@@ -21,7 +20,7 @@ async function drizzlePlugin(fastify) {
         fastify.log.info('Drizzle/MySQL connected');
     } catch (err) {
         fastify.log.error('Drizzle connection error:', err.message);
-        process.exit(1);
+        throw err;
     }
 
     fastify.decorate('db', db);

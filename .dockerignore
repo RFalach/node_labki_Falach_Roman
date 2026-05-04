@@ -1,0 +1,7 @@
+node_modules
+test
+.git
+data/backups
+uploads
+.env
+.env.test

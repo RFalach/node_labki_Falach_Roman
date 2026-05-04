@@ -15,7 +15,6 @@ async function seed() {
         user: process.env.MYSQL_USER || 'root',
         password: process.env.MYSQL_PASSWORD || '',
         database: process.env.MYSQL_DB || 'inventory',
-        socketPath: '/run/mysqld/mysqld.sock',
     });
     
     const db = drizzle(pool);
